@@ -1,0 +1,181 @@
+ASSIGNMENT 7
+
+CREATE TABLE o_rollcall(
+    roll_no INT,
+    name VARCHAR(20),
+    address VARCHAR(20)
+);
+
+CREATE TABLE n_rollcall(
+    roll_no INT,
+    name VARCHAR(20),
+    address VARCHAR(20)
+);
+
+INSERT INTO o_rollcall VALUES(1,'Hitesh','Nandura');
+INSERT INTO o_rollcall VALUES(2,'Piyush','MP');
+INSERT INTO o_rollcall VALUES(3,'Ashley','Nsk');
+INSERT INTO o_rollcall VALUES(4,'Kalpesh','Dhule');
+INSERT INTO o_rollcall VALUES(5,'Abhi','Satara');
+
+DELIMITER //
+
+CREATE PROCEDURE p3(IN r1 INT)
+BEGIN
+    DECLARE r2 INT;
+    DECLARE exit_loop BOOLEAN DEFAULT FALSE;
+
+    DECLARE c1 CURSOR FOR
+        SELECT roll_no
+        FROM o_rollcall
+        WHERE roll_no > r1;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+        SET exit_loop = TRUE;
+
+    OPEN c1;
+
+    e_loop: LOOP
+
+        FETCH c1 INTO r2;
+
+        IF exit_loop THEN
+            CLOSE c1;
+            LEAVE e_loop;
+        END IF;
+
+        IF NOT EXISTS (
+            SELECT *
+            FROM n_rollcall
+            WHERE roll_no = r2
+        ) THEN
+            INSERT INTO n_rollcall
+            SELECT *
+            FROM o_rollcall
+            WHERE roll_no = r2;
+        END IF;
+
+    END LOOP e_loop;
+
+END //
+
+DELIMITER ;
+
+CALL p3(3);
+
+SELECT * FROM n_rollcall;
+
+CALL p3(0);
+
+SELECT * FROM n_rollcall;
+
+INSERT INTO o_rollcall VALUES(6,'Patil','Kolhapur');
+
+CALL p3(4);
+
+SELECT * FROM n_rollcall;
+
+
+
+__________________________________________________________________________________________________________________
+ASSIHNMENT 8
+
+CREATE TABLE borrower(
+    rollin INT,
+    name VARCHAR(30),
+    dateofissue DATE,
+    nameofbook VARCHAR(30),
+    status CHAR(10)
+);
+
+INSERT INTO borrower VALUES
+(101,'abc','2017-07-16','dbms','r'),
+(102,'abc1','2017-07-16','cn','i'),
+(103,'abc3','2017-07-18','toc','i'),
+(104,'abc4','2017-07-20','ds','i'),
+(105,'abc5','2017-07-23','daa','r'),
+(106,'nisha','2017-08-10','splm','r');
+
+CREATE TABLE library_audit(
+    rollin INT,
+    name CHAR(10),
+    dateofissue DATE,
+    nameofbook CHAR(10),
+    status CHAR(10),
+    ts TIMESTAMP
+);
+
+DELIMITER //
+
+CREATE TRIGGER after_insert
+AFTER INSERT ON borrower
+FOR EACH ROW
+BEGIN
+    INSERT INTO library_audit
+    VALUES(
+        NEW.rollin,
+        NEW.name,
+        NEW.dateofissue,
+        NEW.nameofbook,
+        NEW.status,
+        CURRENT_TIMESTAMP
+    );
+END //
+
+CREATE TRIGGER after_delete
+AFTER DELETE ON borrower
+FOR EACH ROW
+BEGIN
+    INSERT INTO library_audit
+    VALUES(
+        OLD.rollin,
+        OLD.name,
+        OLD.dateofissue,
+        OLD.nameofbook,
+        OLD.status,
+        CURRENT_TIMESTAMP
+    );
+END //
+
+CREATE TRIGGER after_update
+AFTER UPDATE ON borrower
+FOR EACH ROW
+BEGIN
+    INSERT INTO library_audit
+    VALUES(
+        NEW.rollin,
+        NEW.name,
+        NEW.dateofissue,
+        NEW.nameofbook,
+        NEW.status,
+        CURRENT_TIMESTAMP
+    );
+END //
+
+DELIMITER ;
+
+SELECT * FROM borrower;
+
+SELECT * FROM library_audit;
+
+INSERT INTO borrower
+VALUES(107,'ada','2017-08-10','dbms','i');
+
+SELECT * FROM borrower;
+
+SELECT * FROM library_audit;
+
+DELETE FROM borrower
+WHERE rollin = 105;
+
+SELECT * FROM borrower;
+
+SELECT * FROM library_audit;
+
+UPDATE borrower
+SET status='r'
+WHERE rollin = 104;
+
+SELECT * FROM borrower;
+
+SELECT * FROM library_audit;
